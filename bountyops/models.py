@@ -16,6 +16,7 @@ class Program:
     time_limit_note: str
     policy_url: str
     discord_thread_id: int | None
+    discord_category_id: int | None
     created_at: str
 
 

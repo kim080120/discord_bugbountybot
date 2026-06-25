@@ -1,10 +1,21 @@
+
 from __future__ import annotations
 
 import fnmatch
-import re
 from urllib.parse import urlparse
 
 from ..models import ScopeItem
+
+
+def scope_has_path(value: str) -> bool:
+    value = (value or "").strip()
+    if "://" in value:
+        parsed = urlparse(value)
+        return bool(parsed.path and parsed.path not in {"", "/"})
+    if "/" in value:
+        host, path = value.split("/", 1)
+        return bool(path.strip("/"))
+    return False
 
 
 def normalize_scope_value(value: str) -> str:
@@ -31,6 +42,17 @@ def normalize_host(host: str) -> str:
 
 
 def host_matches_scope(host: str, scope_value: str) -> bool:
+    """
+    Host-only scope matcher.
+
+    Important v0.3.2 guard:
+    If a scope value contains a path, e.g. https://github.com/vercel/next.js,
+    do NOT treat github.com as fully in-scope. Path-aware matching can be added
+    later when endpoint path is available.
+    """
+    if scope_has_path(scope_value):
+        return False
+
     host = normalize_host(host)
     scope = normalize_scope_value(scope_value)
 

@@ -3,7 +3,8 @@ from __future__ import annotations
 import discord
 from discord import app_commands
 
-from ..workspace import refresh_program_thread
+from ..workspace import refresh_program_thread, post_scope_update
+from ..services.endpoint_triage import reclassify_program_endpoints
 
 
 SCOPE_TYPE_CHOICES = [
@@ -43,10 +44,18 @@ class ScopeCommands(app_commands.Group):
             source_url=source_url,
         )
 
+        await post_scope_update(
+            bot=self.bot,
+            program=program,
+            scope_type=item.type,
+            value=item.value,
+            note=item.note,
+        )
+        result = reclassify_program_endpoints(self.bot.db, program)
         await refresh_program_thread(bot=self.bot, db=self.bot.db, program=program)
 
         label = "In-scope" if item.type == "in" else "Out-of-scope"
         await interaction.followup.send(
-            f"{label} 추가 완료: `{item.value}`",
+            f"{label} added: `{item.value}`\nReclassified endpoints: changed `{result.changed}`, in `{result.in_count}`, out `{result.out_count}`, unknown `{result.unknown_count}`",
             ephemeral=True,
         )
